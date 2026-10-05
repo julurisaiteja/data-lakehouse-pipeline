@@ -1,60 +1,87 @@
+:root {
+  --lake-bg: #f2f7f5;
+  --lake-surface: #ffffff;
+  --lake-ink: #19302e;
+  --lake-muted: #66807b;
+  --lake-line: #d9e6e2;
+  --lake-accent: #0f766e;
+  --lake-accent-soft: #e5f3ef;
+  --lake-warm: #d99a42;
+}
+
 .App {
-  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  color: var(--lake-ink);
+  background: var(--lake-bg);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .App-header {
-  background: #282c34;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: #123936;
   color: white;
-  padding: 10px 20px;
+  border-bottom: 3px solid var(--lake-warm);
 }
 
+.App-header h2 { margin: 0; font-size: 20px; }
+.demo-callout { padding: 10px 24px; border-bottom: 1px solid #d2e6df; background: #e6f4f0; color: #12645d; font-size: 12px; font-weight: 600; }
+
 .App-container {
-  display: flex;
-  height: calc(100vh - 60px);
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: calc(100vh - 68px);
 }
 
 .Sidebar {
-  width: 260px;
-  border-right: 1px solid #ccc;
-  padding: 10px;
+  padding: 22px 16px;
+  background: var(--lake-surface);
+  border-right: 1px solid var(--lake-line);
   overflow-y: auto;
 }
 
-.Version-list {
-  list-style: none;
-  padding: 0;
-}
-
-.Version-item {
-  padding: 4px 6px;
-  cursor: pointer;
-}
-
-.Version-item.selected {
-  background-color: #007bff;
-  color: white;
-}
+.Sidebar label, .Sidebar h4 { display: block; margin: 0 0 10px; color: var(--lake-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.Sidebar select { width: 100%; min-height: 40px; margin-bottom: 26px; border: 1px solid var(--lake-line); border-radius: 7px; padding: 8px 10px; background: white; color: var(--lake-ink); }
+.Version-list { display: grid; gap: 6px; list-style: none; padding: 0; margin: 12px 0 0; }
+.Version-item { padding: 10px; border: 1px solid transparent; border-radius: 7px; color: var(--lake-muted); font-size: 12px; line-height: 1.5; cursor: pointer; }
+.Version-item:hover { background: var(--lake-accent-soft); color: var(--lake-ink); }
+.Version-item.selected { background: var(--lake-accent-soft); border-color: #b8ded5; color: var(--lake-accent); font-weight: 700; }
 
 .Main {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+  padding: 24px;
 }
 
-.Metadata table,
-.Results table {
-  border-collapse: collapse;
-  width: 100%;
+.Metadata, .Query, .Results { min-width: 0; padding: 18px; border: 1px solid var(--lake-line); border-radius: 9px; background: var(--lake-surface); box-shadow: 0 5px 18px rgba(25, 48, 46, 0.04); }
+.Metadata h3, .Query h3, .Results h3 { margin: 0 0 14px; font-size: 15px; }
+.Metadata h4 { margin: 18px 0 10px; color: var(--lake-muted); font-size: 12px; text-transform: uppercase; }
+.Metadata p, .Results p { color: var(--lake-muted); font-size: 13px; }
+.Query { grid-column: 2; grid-row: 1 / span 2; }
+.Query textarea { width: 100%; min-height: 230px; resize: vertical; border: 1px solid #cbdcd7; border-radius: 7px; padding: 12px; background: #122322; color: #e2f0eb; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.Query textarea:focus { outline: 3px solid var(--lake-accent-soft); border-color: var(--lake-accent); }
+.Query button { min-width: 96px; margin-top: 12px; border: 0; border-radius: 6px; padding: 10px 16px; background: var(--lake-accent); color: white; font: inherit; font-weight: 700; cursor: pointer; }
+.Query button:hover { background: #0b625c; }
+.Metadata table, .Results table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.Metadata th, .Metadata td, .Results th, .Results td { padding: 9px 10px; border-bottom: 1px solid var(--lake-line); text-align: left; }
+.Metadata th, .Results th { background: #f5f9f7; color: var(--lake-muted); font-size: 10px; text-transform: uppercase; }
+.Results { grid-column: 1 / -1; overflow-x: auto; }
+.Error { color: #b5473a; font-size: 13px; }
+
+@media (max-width: 900px) {
+  .App-container { grid-template-columns: 210px minmax(0, 1fr); }
+  .Main { grid-template-columns: 1fr; padding: 16px; }
+  .Query, .Results { grid-column: auto; grid-row: auto; }
 }
 
-.Metadata th,
-.Metadata td,
-.Results th,
-.Results td {
-  border: 1px solid #ddd;
-  padding: 4px 6px;
-}
-
-.Error {
-  color: red;
+@media (max-width: 640px) {
+  .App-container { grid-template-columns: 1fr; }
+  .Sidebar { border-right: 0; border-bottom: 1px solid var(--lake-line); }
+  .Main { padding: 12px; }
+  .Query textarea { min-height: 180px; }
 }

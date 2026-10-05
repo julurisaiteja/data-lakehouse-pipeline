@@ -2,6 +2,64 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+const DEMO_MODE = typeof window !== "undefined" && (
+  window.location.hostname.endsWith(".workers.dev") ||
+  window.location.hostname.endsWith(".pages.dev")
+);
+const DEMO_TABLES = {
+  bronze: {
+    rowCount: 12,
+    schema: { event_id: "string", type: "string", customer_id: "string", amount: "double", region: "string" },
+    versions: [
+      { version: 4, operation: "APPEND", timestamp: "2026-10-05T12:30:00.000Z" },
+      { version: 3, operation: "APPEND", timestamp: "2026-10-05T11:15:00.000Z" },
+      { version: 2, operation: "CREATE", timestamp: "2026-10-05T09:00:00.000Z" },
+    ],
+    rows: [
+      { event_id: "evt-2104", type: "order_placed", customer_id: "cus-1008", amount: 128.5, region: "West" },
+      { event_id: "evt-2103", type: "payment_captured", customer_id: "cus-1004", amount: 76, region: "North" },
+      { event_id: "evt-2102", type: "order_placed", customer_id: "cus-1012", amount: 244.9, region: "East" },
+      { event_id: "evt-2101", type: "inventory_adjusted", customer_id: "cus-1002", amount: -3, region: "West" },
+      { event_id: "evt-2100", type: "payment_captured", customer_id: "cus-1010", amount: 59.99, region: "South" },
+      { event_id: "evt-2099", type: "order_placed", customer_id: "cus-1001", amount: 182, region: "North" },
+      { event_id: "evt-2098", type: "refund_issued", customer_id: "cus-1004", amount: -24, region: "North" },
+    ],
+  },
+  silver: {
+    rowCount: 7,
+    schema: { event_id: "string", type: "string", customer_id: "string", amount: "double", region: "string" },
+    versions: [
+      { version: 8, operation: "MERGE", timestamp: "2026-10-05T13:05:00.000Z" },
+      { version: 7, operation: "OPTIMIZE", timestamp: "2026-10-05T12:45:00.000Z" },
+      { version: 6, operation: "MERGE", timestamp: "2026-10-05T11:50:00.000Z" },
+    ],
+    rows: [
+      { event_id: "evt-2104", type: "order_placed", customer_id: "cus-1008", amount: 128.5, region: "West" },
+      { event_id: "evt-2103", type: "payment_captured", customer_id: "cus-1004", amount: 76, region: "North" },
+      { event_id: "evt-2102", type: "order_placed", customer_id: "cus-1012", amount: 244.9, region: "East" },
+      { event_id: "evt-2100", type: "payment_captured", customer_id: "cus-1010", amount: 59.99, region: "South" },
+      { event_id: "evt-2099", type: "order_placed", customer_id: "cus-1001", amount: 182, region: "North" },
+      { event_id: "evt-2098", type: "refund_issued", customer_id: "cus-1004", amount: -24, region: "North" },
+      { event_id: "evt-2097", type: "inventory_adjusted", customer_id: "cus-1002", amount: -3, region: "West" },
+    ],
+  },
+  silver_corrected: {
+    rowCount: 6,
+    schema: { event_id: "string", type: "string", customer_id: "string", amount: "double", region: "string" },
+    versions: [
+      { version: 2, operation: "UPDATE", timestamp: "2026-10-05T13:18:00.000Z" },
+      { version: 1, operation: "CREATE", timestamp: "2026-10-05T13:10:00.000Z" },
+    ],
+    rows: [
+      { event_id: "evt-2104", type: "order_placed", customer_id: "cus-1008", amount: 128.5, region: "West" },
+      { event_id: "evt-2103", type: "payment_captured", customer_id: "cus-1004", amount: 76, region: "North" },
+      { event_id: "evt-2102", type: "order_placed", customer_id: "cus-1012", amount: 244.9, region: "East" },
+      { event_id: "evt-2100", type: "payment_captured", customer_id: "cus-1010", amount: 59.99, region: "South" },
+      { event_id: "evt-2099", type: "order_placed", customer_id: "cus-1001", amount: 182, region: "North" },
+      { event_id: "evt-2098", type: "refund_issued", customer_id: "cus-1004", amount: -24, region: "North" },
+    ],
+  },
+};
 
 function App() {
   const [table, setTable] = useState("silver");
@@ -15,6 +73,15 @@ function App() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setVersions(DEMO_TABLES[table].versions);
+      setSelectedVersion(DEMO_TABLES[table].versions[0].version);
+      setMetadata(null);
+      setResults([]);
+      setError("");
+      return;
+    }
+
     fetch(`${API_BASE}/api/tables/${table}/versions`)
       .then((res) => res.json())
       .then((data) => {
@@ -28,6 +95,12 @@ function App() {
 
   useEffect(() => {
     if (selectedVersion === null) return;
+    if (DEMO_MODE) {
+      const sample = DEMO_TABLES[table];
+      setMetadata({ rowCount: sample.rowCount, schema: sample.schema });
+      return;
+    }
+
     fetch(`${API_BASE}/api/tables/${table}/versions/${selectedVersion}`)
       .then((res) => res.json())
       .then((data) => setMetadata(data))
@@ -36,6 +109,24 @@ function App() {
 
   const runQuery = () => {
     setError("");
+    if (DEMO_MODE) {
+      const sampleRows = DEMO_TABLES[table].rows;
+      const typeFilter = query.match(/where\s+type\s*=\s*['"]([^'"]+)['"]/i)?.[1]?.toLowerCase();
+      const limit = Number(query.match(/limit\s+(\d+)/i)?.[1] || 5);
+      let rows = typeFilter
+        ? sampleRows.filter((row) => row.type.toLowerCase() === typeFilter)
+        : sampleRows;
+
+      if (/count\s*\(/i.test(query) && /group\s+by\s+type/i.test(query)) {
+        const groups = new Map();
+        rows.forEach((row) => groups.set(row.type, (groups.get(row.type) || 0) + 1));
+        rows = [...groups].map(([type, event_count]) => ({ type, event_count }));
+      }
+
+      setResults(rows.slice(0, Math.max(1, Math.min(limit, 50))));
+      return;
+    }
+
     fetch(`${API_BASE}/api/tables/${table}/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -58,6 +149,11 @@ function App() {
       <header className="App-header">
         <h2>Lakehouse Explorer</h2>
       </header>
+      {DEMO_MODE && (
+        <div className="demo-callout" role="status">
+          Demo snapshot · Sample lakehouse rows and version history. SQL preview supports type filters and grouped counts; no live warehouse is connected.
+        </div>
+      )}
       <div className="App-container">
         <aside className="Sidebar">
           <div>
